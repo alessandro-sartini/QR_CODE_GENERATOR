@@ -14,12 +14,9 @@ public class ProdottoController {
 
     // Simuliamo un "database"
 
-  
-
     @GetMapping
     public String getTuttiIProdotti() {
-        return "prodotti";
+        return "prodotti nuovi";
     }
 
-   
 }
