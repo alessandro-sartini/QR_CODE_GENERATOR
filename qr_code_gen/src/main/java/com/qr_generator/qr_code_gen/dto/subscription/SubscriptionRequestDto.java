@@ -7,6 +7,6 @@ public class SubscriptionRequestDto {
 
     private Long userId;
 
-    
+    private String planType;
 
 }

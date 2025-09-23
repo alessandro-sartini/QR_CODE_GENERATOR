@@ -1,6 +1,5 @@
 package com.qr_generator.qr_code_gen.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.qr_generator.qr_code_gen.dto.user.UserRegistrationDto;
@@ -15,18 +14,19 @@ public class UserService {
     private final UserMapper userMapper;
 
     private final UserRepo userRepo;
-    
-    
+
     public UserService(UserRepo userRepository, UserMapper userMapper) {
         this.userRepo = userRepository;
         this.userMapper = userMapper;
     }
-    public UserResponseDto registrationUser( UserRegistrationDto userRegistrationDto ){
-        User user = userMapper.toEntity(userRegistrationDto);
-        // user.setPasswordHash(passwordEncoder.encode(dto.getPassword()));
-        User saved = userRepo.save(user);
 
-        return userMapper.toDto(saved);
-    }
+    // public UserResponseDto registrationUser( UserRegistrationDto
+    // userRegistrationDto ){
+    // User user = userMapper.toEntity(userRegistrationDto);
+    // // user.setPasswordHash(passwordEncoder.encode(dto.getPassword()));
+    // User saved = userRepo.save(user);
+
+    // return userMapper.toDto(saved);
+    // }
 
 }
