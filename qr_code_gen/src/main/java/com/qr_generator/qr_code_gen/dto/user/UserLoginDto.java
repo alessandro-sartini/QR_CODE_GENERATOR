@@ -1,11 +1,11 @@
-package com.qr_generator.qr_code_gen.dto;
+package com.qr_generator.qr_code_gen.dto.user;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data
-public class UserRegistrationDto {
+public class UserLoginDto {
 
     @Email
     @NotBlank
@@ -13,8 +13,4 @@ public class UserRegistrationDto {
 
     @NotBlank
     private String password;
-
-    @NotBlank
-    private String name;
-
 }
