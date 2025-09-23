@@ -12,8 +12,9 @@ import com.qr_generator.qr_code_gen.entity.User;
 @Mapper(componentModel = "spring")
 public interface ApiKeyMapper {
 
+    @Mapping(target = "userId", source = "user.id")
     ApiKeyResponseDto toDto(ApiKey apiKey);
 
-    ApiKey toEntity (ApiKeyResponseDto apiKeyResponseDto);
+    ApiKey toEntity(ApiKeyResponseDto apiKeyResponseDto);
 
 }
