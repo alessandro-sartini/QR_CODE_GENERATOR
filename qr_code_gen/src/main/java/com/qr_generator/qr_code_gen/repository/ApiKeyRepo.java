@@ -15,4 +15,7 @@ public interface ApiKeyRepo extends JpaRepository<ApiKey, Long> {
     Optional<ApiKey> findByKeyValue(String keyValue);
 
     List<ApiKey> findAllByUser(User user);
+
+
+    List<ApiKey> findAllByUser(Long id);
 }
