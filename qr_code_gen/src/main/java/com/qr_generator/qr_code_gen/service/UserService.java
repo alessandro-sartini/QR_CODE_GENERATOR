@@ -11,14 +11,14 @@ import com.qr_generator.qr_code_gen.dto.user.UserResponseDto;
 import com.qr_generator.qr_code_gen.entity.User;
 import com.qr_generator.qr_code_gen.mapper.user.UserMapper;
 import com.qr_generator.qr_code_gen.repository.UserRepo;
+import com.qr_generator.qr_code_gen.exceptions.InvalidInputException;
+import com.qr_generator.qr_code_gen.exceptions.UserNotFoundException;
 
 @Service
 public class UserService {
 
     private final UserMapper userMapper;
-
     private final UserRepo userRepo;
-
     private final PasswordEncoder passwordEncoder;
 
     public UserService(UserRepo userRepo, UserMapper userMapper, PasswordEncoder passwordEncoder) {
@@ -27,76 +27,50 @@ public class UserService {
         this.passwordEncoder = passwordEncoder;
     }
 
-    // public UserResponseDto registrationUser( UserRegistrationDto
-    // userRegistrationDto ){
-    // User user = userMapper.toEntity(userRegistrationDto);
-    // // user.setPasswordHash(passwordEncoder.encode(dto.getPassword()));
-    // User saved = userRepo.save(user);
-
-    // return userMapper.toDto(saved);
-    // }
-
+    /**
+     * Registers a new user, validates unique email, hashes password.
+     */
     public UserResponseDto registerUser(UserRegistrationDto dto) {
-
-        User userRegistred = userMapper.toEntity(dto);
-        
-        userRegistred.setPasswordHash(passwordEncoder.encode(dto.getPassword()));
-
-        
-        userRepo.save(userRegistred);
-
-
-        return userMapper.toDto(userRegistred);
-
+        User userRegistered = userMapper.toEntity(dto);
+        userRegistered.setPasswordHash(passwordEncoder.encode(dto.getPassword()));
+        userRepo.save(userRegistered);
+        return userMapper.toDto(userRegistered);
     }
 
-    // Registra nuovo utente, valida e-mail unica, hash password
-
+    /**
+     * Checks email/password, returns user data (JWT if implemented).
+     */
     public UserResponseDto login(UserLoginDto dto) {
-
-        // 1. Cerca utente per email
         Optional<User> userOpt = userRepo.findByEmail(dto.getEmail());
         if (userOpt.isEmpty()) {
-            System.out.println("Mail not found");
+            throw new UserNotFoundException("Email not found");
         }
+
         User user = userOpt.get();
-        // 2. Verifica password
         if (!passwordEncoder.matches(dto.getPassword(), user.getPasswordHash())) {
-            System.out.println("Password wrog!");
-        }
-        // 3. [Opzionale] Genera JWT/token, se previsto
-        // 4. Restituisci i dati utente (mai inviare password)
-        return userMapper.toDto(user);
-
-    }
-    // Verifica email/password, ritorna dati utente (JWT se previsto)
-
-    UserResponseDto getProfileById(Long userId) {
-
-        Optional<User> userFind = userRepo.findById(userId);
-
-        if (userFind.isEmpty()) {
-            System.out.println("User with ID: " + userId + " not found!");
+            throw new InvalidInputException("Incorrect password");
         }
 
-        User user = userFind.get();
-
         return userMapper.toDto(user);
-
     }
-    // Recupera dati profilo, NO password
 
-    Optional<User> getUserEntityById(Long id) {
+    /**
+     * Gets user profile by ID, NO password returned.
+     */
+    public UserResponseDto getProfileById(Long userId) {
+        User user = userRepo.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+        return userMapper.toDto(user);
+    }
 
+    /**
+     * For internal service use (e.g. SubscriptionService)
+     */
+    public Optional<User> getUserEntityById(Long id) {
         Optional<User> userFind = userRepo.findById(id);
-
         if (userFind.isEmpty()) {
-            System.out.println("User with ID: " + id + " not found!");
+            throw new UserNotFoundException("User with ID: " + id + " not found!");
         }
-
         return userFind;
-
     }
-    // Per uso interno ai service collegati (es. SubscriptionService)
-
 }

@@ -5,8 +5,6 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
-import javax.management.RuntimeErrorException;
-
 import org.springframework.stereotype.Service;
 
 import com.qr_generator.qr_code_gen.dto.subscription.SubscriptionRequestDto;
@@ -18,34 +16,30 @@ import com.qr_generator.qr_code_gen.entity.User;
 import com.qr_generator.qr_code_gen.mapper.subscription.SubscriptionMapper;
 import com.qr_generator.qr_code_gen.repository.SubscriptionRepo;
 import com.qr_generator.qr_code_gen.repository.UserRepo;
+import com.qr_generator.qr_code_gen.exceptions.UserNotFoundException;
+import com.qr_generator.qr_code_gen.exceptions.SubscriptionNotFoundException;
 
 @Service
 public class SubscriptionService {
-
     private final SubscriptionRepo subscriptionRepo;
-
     private final SubscriptionMapper subscriptionMapper;
-
     private final UserRepo userRepo;
 
     public SubscriptionService(SubscriptionMapper subscriptionMapper, SubscriptionRepo subscriptionRepo,
             UserRepo userRepo) {
-
         this.subscriptionMapper = subscriptionMapper;
         this.subscriptionRepo = subscriptionRepo;
         this.userRepo = userRepo;
-
     }
 
+    /**
+     * Creates or updates a user's subscription.
+     */
     public SubscriptionResponseDto createOrUpdateSubscription(SubscriptionRequestDto dto) {
-        // Crea o aggiorna la subscription di un utente
         User user = userRepo.findById(dto.getUserId())
-                .orElseThrow(() -> new RuntimeException("user not found"));
-
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
         Optional<Subscription> optional = subscriptionRepo.findByUserId(dto.getUserId());
-
         Subscription subscription;
-
         if (optional.isPresent()) {
             subscription = optional.get();
             subscription.setSubscriptionPlan(SubscriptionPlan.valueOf(dto.getPlanType()));
@@ -57,38 +51,33 @@ public class SubscriptionService {
             subscription.setSubscriptionPlan(SubscriptionPlan.valueOf(dto.getPlanType()));
             subscription.setStatus(Status.ACTIVE);
             subscription.setStartDate(LocalDate.now());
-            // endDate logica tua business
             subscription.setCreatedAt(Instant.now());
         }
-
         Subscription saved = subscriptionRepo.save(subscription);
         return subscriptionMapper.toDto(saved);
     }
 
+    /**
+     * Gets a subscription by user ID.
+     */
     public SubscriptionResponseDto getSubscriptionByUserId(Long userId) {
-        Optional<User> user = userRepo.findById(userId);
-
-        if (user.isEmpty()) {
-            throw new RuntimeException("user not found");
-        }
-        Optional<Subscription> optional = subscriptionRepo.findByUser(user.get());
-
-        return subscriptionMapper.toDto(optional.get());
-        
+        User user = userRepo.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+        Optional<Subscription> optional = subscriptionRepo.findByUser(user);
+        return optional.map(subscriptionMapper::toDto)
+                .orElseThrow(() -> new SubscriptionNotFoundException("Subscription not found"));
     }
 
+    /**
+     * Gets all subscriptions in the system.
+     */
     public List<SubscriptionResponseDto> getAllSubscriptions() {
-        
         List<Subscription> subscriptions = subscriptionRepo.findAll();
-
         if (subscriptions.isEmpty()) {
-            throw new RuntimeException("subscriptions not found");
-        } 
+            throw new SubscriptionNotFoundException("No subscriptions found");
+        }
         return subscriptions.stream()
-        .map((sub) -> subscriptionMapper.toDto(sub))
-        .toList();
-
-        
+                .map(subscriptionMapper::toDto)
+                .toList();
     }
-
 }

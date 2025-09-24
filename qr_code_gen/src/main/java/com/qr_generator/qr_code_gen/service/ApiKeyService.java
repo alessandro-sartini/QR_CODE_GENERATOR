@@ -14,6 +14,7 @@ import com.qr_generator.qr_code_gen.entity.User;
 import com.qr_generator.qr_code_gen.mapper.apiKey.ApiKeyMapper;
 import com.qr_generator.qr_code_gen.repository.ApiKeyRepo;
 import com.qr_generator.qr_code_gen.repository.UserRepo;
+import com.qr_generator.qr_code_gen.exceptions.UserNotFoundException;
 
 import jakarta.transaction.Transactional;
 
@@ -21,9 +22,7 @@ import jakarta.transaction.Transactional;
 public class ApiKeyService {
 
     private final ApiKeyRepo apiKeyRepository;
-
     private final ApiKeyMapper apiKeyMapper;
-
     private final UserRepo userRepo;
 
     public ApiKeyService(ApiKeyRepo apiKeyRepository, ApiKeyMapper apiKeyMapper, UserRepo userRepo) {
@@ -32,8 +31,12 @@ public class ApiKeyService {
         this.userRepo = userRepo;
     }
 
+    /**
+     * Generates a new API key for a user.
+     */
     public ApiKeyResponseDto generateForUser(Long userId) {
-        User user = userRepo.findById(userId).get();
+        User user = userRepo.findById(userId)
+            .orElseThrow(() -> new UserNotFoundException("User not found"));
         String keyValue = generateUniqueKey();
         ApiKey apiKey = new ApiKey();
         apiKey.setUser(user);
@@ -51,8 +54,9 @@ public class ApiKeyService {
             key = generateRandomKey(40);
             attempt++;
         } while (apiKeyRepository.findByKeyValue(key).isPresent() && attempt < 10);
-        if (attempt == 10)
-            throw new IllegalStateException("Non riesco a generare una chiave unica dopo 10 tentativi.");
+        if (attempt == 10) {
+            throw new IllegalStateException("Unable to generate a unique key after 10 attempts.");
+        }
         return key;
     }
 
@@ -65,35 +69,27 @@ public class ApiKeyService {
         return sb.toString();
     }
 
-    // // Genera nuova chiave (32+ caratteri random), salva e ritorna DTO
-
+    /**
+     * Deactivates a key, only if it belongs to the user.
+     */
     @Transactional
     public boolean revokeKey(String keyValue, Long userId) {
-
         Optional<ApiKey> key = apiKeyRepository.findByKeyValue(keyValue);
-
         if (key.isEmpty() || !key.get().getUser().getId().equals(userId))
-            return false; // chiave non appartiene all’utente
+            return false; // key does not belong to user
         ApiKey keyEnd = key.get();
-
         keyEnd.setActive(false);
-
         apiKeyRepository.save(keyEnd);
-
         return true;
     }
 
-    // Disattiva chiave, solo se appartiene all’utente
-
+    /**
+     * Returns all keys (active/inactive) for a user.
+     */
     public List<ApiKeyResponseDto> getKeysByUser(Long userId) {
-
         List<ApiKey> listKey = apiKeyRepository.findAllByUser(userId);
-
         return listKey.stream()
-                .map((e) -> apiKeyMapper.toDto(e))
-                .collect(Collectors.toList());
-
+            .map(apiKeyMapper::toDto)
+            .collect(Collectors.toList());
     }
-    // Tore tutte le chiavi attive/inattive di un user
-
 }

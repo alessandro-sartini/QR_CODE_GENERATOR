@@ -14,14 +14,14 @@ import com.qr_generator.qr_code_gen.entity.User;
 import com.qr_generator.qr_code_gen.mapper.qrCode.QrCodeMapper;
 import com.qr_generator.qr_code_gen.repository.QrCodeRepo;
 import com.qr_generator.qr_code_gen.repository.UserRepo;
+import com.qr_generator.qr_code_gen.exceptions.UserNotFoundException;
+import com.qr_generator.qr_code_gen.exceptions.QrCodeNotFoundException;
 
 @Service
 public class QrCodeService {
 
     private final QrCodeMapper qrCodeMapper;
-
     private final QrCodeRepo qrCodeRepo;
-
     private final UserRepo userRepo;
 
     @Autowired
@@ -31,67 +31,51 @@ public class QrCodeService {
         this.userRepo = userRepo;
     }
 
+    /**
+     * Generates a QR code for a user.
+     */
     public QrCodeResponseDto generateQrCode(QrCodeGenerationDto dto, Long userId) {
-
         User user = userRepo.findById(userId)
-                .orElseThrow(() -> new RuntimeException("user not found"));
-
+            .orElseThrow(() -> new UserNotFoundException("User not found"));
         QrCode qrCode = qrCodeMapper.toEntity(dto);
-
         qrCode.setUser(user);
         qrCode.setScanCount(0);
         qrCode.setCreatedAt(Instant.now());
-        qrCode.setImageUrl("https://placehold.co/" + qrCode.getSize() + "x" + qrCode.getSize() + ".png"); // simulato!
-
+        qrCode.setImageUrl("https://placehold.co/" + qrCode.getSize() + "x" + qrCode.getSize() + ".png"); // simulated
         QrCode saved = qrCodeRepo.save(qrCode);
         return qrCodeMapper.toDto(saved);
     }
 
+    /**
+     * Returns all QR codes for a user.
+     */
     public List<QrCodeResponseDto> getQrsByUser(Long userId) {
-
-        Optional<User> user = userRepo.findById(userId);
-        if (user.isEmpty()) {
-            throw new RuntimeException("user not found");
-        }
-
-        List<QrCode> qrList = qrCodeRepo.findAllByUser(user.get());
-
+        User user = userRepo.findById(userId)
+            .orElseThrow(() -> new UserNotFoundException("User not found"));
+        List<QrCode> qrList = qrCodeRepo.findAllByUser(user);
         return qrList.stream()
-                .map((qr) -> qrCodeMapper.toDto(qr))
-                .toList();
-
+            .map(qrCodeMapper::toDto)
+            .toList();
     }
 
+    /**
+     * Gets a QR code by ID.
+     */
     public QrCodeResponseDto getQrById(Long qrId) {
-        Optional<QrCode> found = qrCodeRepo.findById(qrId);
-
-        if (found.isEmpty()) {
-            throw new RuntimeException("qr not found");
-        }
-
-        return qrCodeMapper.toDto(found.get());
+        QrCode found = qrCodeRepo.findById(qrId)
+            .orElseThrow(() -> new QrCodeNotFoundException("QR not found"));
+        return qrCodeMapper.toDto(found);
     }
 
+    /**
+     * Increments scan count by 1.
+     */
     public boolean incrementScanCount(Long qrId) {
-        // 1. Recupera il QR code
-        Optional<QrCode> optQr = qrCodeRepo.findById(qrId);
-        if (optQr.isEmpty()) {
-            return false; // oppure lancia una eccezione custom
-            // throw new QrCodeNotFoundException("QR code non trovato");
-        }
-        QrCode qrCode = optQr.get();
-
-        // 2. Incrementa lo scan count
+        QrCode qrCode = qrCodeRepo.findById(qrId)
+            .orElseThrow(() -> new QrCodeNotFoundException("QR code not found"));
         qrCode.setScanCount(qrCode.getScanCount() + 1);
-
-        // (opzionale: aggiorna anche lastScannedAt)
         qrCode.setLastScannedAt(Instant.now());
-
-        // 3. Salva l’update
         qrCodeRepo.save(qrCode);
-
-        // 4. Return ok
         return true;
     }
-
 }
