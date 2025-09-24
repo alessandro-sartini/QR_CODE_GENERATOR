@@ -36,7 +36,7 @@ public class ApiKeyService {
      */
     public ApiKeyResponseDto generateForUser(Long userId) {
         User user = userRepo.findById(userId)
-            .orElseThrow(() -> new UserNotFoundException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
         String keyValue = generateUniqueKey();
         ApiKey apiKey = new ApiKey();
         apiKey.setUser(user);
@@ -87,9 +87,12 @@ public class ApiKeyService {
      * Returns all keys (active/inactive) for a user.
      */
     public List<ApiKeyResponseDto> getKeysByUser(Long userId) {
-        List<ApiKey> listKey = apiKeyRepository.findAllByUser(userId);
+        User user = userRepo.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+        List<ApiKey> listKey = apiKeyRepository.findAllByUser(user);
         return listKey.stream()
-            .map(apiKeyMapper::toDto)
-            .collect(Collectors.toList());
+                .map(apiKeyMapper::toDto)
+                .collect(Collectors.toList());
     }
+
 }
