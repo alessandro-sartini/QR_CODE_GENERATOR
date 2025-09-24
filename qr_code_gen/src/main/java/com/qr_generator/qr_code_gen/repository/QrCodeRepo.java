@@ -14,5 +14,7 @@ public interface QrCodeRepo extends JpaRepository<QrCode, Long> {
     List<QrCode> findAllByUser(User user);
 
     Long countByUser(User user);
+
+    List<QrCode> findAllByUserId(Long userId);
     
 }
