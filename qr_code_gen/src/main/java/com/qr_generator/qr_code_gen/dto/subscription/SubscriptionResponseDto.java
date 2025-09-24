@@ -7,6 +7,8 @@ public class SubscriptionResponseDto {
     
     private Long userId;
 
+    private Long id;
+
     private String planType;
 
     private String status;
